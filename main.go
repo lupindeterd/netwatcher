@@ -7,6 +7,7 @@ import (
 	ocnetworkv1 "github.com/openshift/api/network/v1"
 	ocnetv1 "github.com/openshift/client-go/network/clientset/versioned"
 	ocnetv1informers "github.com/openshift/client-go/network/informers/externalversions"
+	glog "github.com/sirupsen/logrus"
 	networkv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/informers"
@@ -15,7 +16,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"os"
 	_ "path/filepath"
-        glog "github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -90,8 +90,9 @@ func onUpdate(oldobj, newobj interface{}) {
 			// Diff between Annotations
 			diffAnnotations := cmp.Diff(o.GetAnnotations(), n.GetAnnotations())
 			if diffAnnotations != "" {
-				annotations := n.GetAnnotations()
-				glog.Info(fmt.Sprintf("Annotations has changed from  to %s\n", annotations["ReasonForChange"]))
+				oldannotation := o.GetAnnotations()
+				newannotation := n.GetAnnotations()
+				glog.Info(fmt.Sprintf("Annotations has changed from %s  to %s\n", oldannotation["ReasonForChange"], newannotation["ReasonForChange"]))
 			}
 			// Diff between PodSelector
 			diffPodSelector := cmp.Diff(o.Spec.PodSelector.MatchLabels, n.Spec.PodSelector.MatchLabels)
@@ -133,8 +134,22 @@ func onUpdateEgress(oldobj, newobj interface{}) {
 	n := newobj.(*ocnetworkv1.EgressNetworkPolicy)
 	o := oldobj.(*ocnetworkv1.EgressNetworkPolicy)
 	if n.ResourceVersion != o.ResourceVersion {
-		fmt.Printf("onUpdate seen new Egress object: %s on %s\n", n.GetName(), n.GetNamespace())
-
+		glog.Info(fmt.Printf("onUpdate seen new Netpol object: %s on %s with version %s\n", n.GetName(), n.GetNamespace(), n.ResourceVersion))
+		if diff := cmp.Diff(o.Spec, n.Spec); diff != "" {
+			glog.Info(fmt.Sprintf("EgressNetworkPolicy %s in %s Project has change. The following are the changes:", o.GetName(), o.GetNamespace()))
+			// Diff between Annotations
+			diffAnnotations := cmp.Diff(o.GetAnnotations(), n.GetAnnotations())
+			if diffAnnotations != "" {
+                                oldannotation := o.GetAnnotations()
+				newannotation := n.GetAnnotations()
+				glog.Info(fmt.Sprintf("Annotations has changed from %s  to %s\n", oldannotation["ReasonForChange"],  newannotation["ReasonForChange"]))
+			}
+			// Diff between Egress
+			diffEgress := cmp.Diff(o.Spec.Egress, n.Spec.Egress)
+			if diffEgress != "" {
+				glog.Info(fmt.Sprintf("Egress Rules has changed from  %+v to %+v\n", o.Spec.Egress, n.Spec.Egress))
+			}
+		}
 	}
 }
 
