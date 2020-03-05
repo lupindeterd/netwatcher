@@ -86,13 +86,13 @@ func onUpdate(oldobj, newobj interface{}) {
 	if n.ResourceVersion != o.ResourceVersion {
 		glog.Info(fmt.Printf("onUpdate seen new Netpol object: %s on %s with version %s\n", n.GetName(), n.GetNamespace(), n.ResourceVersion))
 		if diff := cmp.Diff(o.Spec, n.Spec); diff != "" {
-			fmt.Sprintf("Networkpolicy %s in %s Project has change. The following are the changes:", o.GetName(), o.GetNamespace())
+			fmt.Sprintf("Networkpolicy named %s in %s Project has change. The following are the changes:", o.GetName(), o.GetNamespace())
 			// Diff between Annotations
 			diffAnnotations := cmp.Diff(o.GetAnnotations(), n.GetAnnotations())
 			if diffAnnotations != "" {
 				oldannotation := o.GetAnnotations()
 				newannotation := n.GetAnnotations()
-				glog.Info(fmt.Sprintf("Annotations has changed from %s  to %s\n", oldannotation["ReasonForChange"], newannotation["ReasonForChange"]))
+				glog.Info(fmt.Sprintf("ReasonForChange has changed from %s  to %s\n", oldannotation["ReasonForChange"], newannotation["ReasonForChange"]))
 			}
 			// Diff between PodSelector
 			diffPodSelector := cmp.Diff(o.Spec.PodSelector.MatchLabels, n.Spec.PodSelector.MatchLabels)
@@ -134,20 +134,28 @@ func onUpdateEgress(oldobj, newobj interface{}) {
 	n := newobj.(*ocnetworkv1.EgressNetworkPolicy)
 	o := oldobj.(*ocnetworkv1.EgressNetworkPolicy)
 	if n.ResourceVersion != o.ResourceVersion {
-		glog.Info(fmt.Printf("onUpdate seen new Netpol object: %s on %s with version %s\n", n.GetName(), n.GetNamespace(), n.ResourceVersion))
+		glog.Info(fmt.Printf("onUpdate seen changes in  EgressNetworkPolicy object: %s on %s with version %s\n", n.GetName(), n.GetNamespace(), n.ResourceVersion))
 		if diff := cmp.Diff(o.Spec, n.Spec); diff != "" {
-			glog.Info(fmt.Sprintf("EgressNetworkPolicy %s in %s Project has change. The following are the changes:", o.GetName(), o.GetNamespace()))
+			glog.Info(fmt.Sprintf("EgressNetworkPolicy named %s in %s Project has change. The following are the changes:", o.GetName(), o.GetNamespace()))
 			// Diff between Annotations
 			diffAnnotations := cmp.Diff(o.GetAnnotations(), n.GetAnnotations())
 			if diffAnnotations != "" {
                                 oldannotation := o.GetAnnotations()
 				newannotation := n.GetAnnotations()
-				glog.Info(fmt.Sprintf("Annotations has changed from %s  to %s\n", oldannotation["ReasonForChange"],  newannotation["ReasonForChange"]))
+				glog.Info(fmt.Sprintf("ReasonForChange has changed from %s  to %s\n", oldannotation["ReasonForChange"],  newannotation["ReasonForChange"]))
 			}
 			// Diff between Egress
 			diffEgress := cmp.Diff(o.Spec.Egress, n.Spec.Egress)
 			if diffEgress != "" {
-				glog.Info(fmt.Sprintf("Egress Rules has changed from  %+v to %+v\n", o.Spec.Egress, n.Spec.Egress))
+				glog.Info(fmt.Sprintf("Egress Rules has changed from:\n"))
+                                for _, policyrule := range o.Spec.Egress {
+                                    glog.Info(fmt.Sprintf("%s: %s", policyrule.To, policyrule.Type))
+                                }
+				glog.Info(fmt.Sprintf("Egress Rules has changed to:\n"))
+                                for _, newpolicyrule := range n.Spec.Egress {
+                                    glog.Info(fmt.Sprintf("%s: %s", newpolicyrule.To, newpolicyrule.Type))
+                                }
+
 			}
 		}
 	}
